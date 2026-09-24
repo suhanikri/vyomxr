@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 .env
 telemetry/*.log
+
+telemetry/*.png
