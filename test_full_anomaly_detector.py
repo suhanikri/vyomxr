@@ -19,7 +19,7 @@ loop.start()
 time.sleep(3)
 
 print("Triggering ALL FOUR anomalies...")
-craft.power.percentage = 15.0  # push battery low so it crosses threshold soon
+craft.power.set_anomaly(True)
 craft.thermal.set_anomaly(True)
 craft.attitude.set_anomaly(True)
 craft.communication.set_anomaly(True)
