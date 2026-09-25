@@ -17,8 +17,16 @@ type SpacecraftState = {
   link_status: string;
 };
 
+type Anomaly = {
+  subsystem: string;
+  reading: number | string;
+  reason: string;
+  severity: string;
+};
+
 export default function Dashboard() {
   const [state, setState] = useState<SpacecraftState | null>(null);
+  const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
 
   useEffect(() => {
     const fetchState = () => {
@@ -26,6 +34,11 @@ export default function Dashboard() {
         .then((res) => res.json())
         .then((data) => setState(data))
         .catch((err) => console.error("Failed to fetch spacecraft state:", err));
+
+      fetch("http://127.0.0.1:8000/spacecraft/anomalies")
+        .then((res) => res.json())
+        .then((data) => setAnomalies(data.anomalies))
+        .catch((err) => console.error("Failed to fetch anomalies:", err));
     };
 
     fetchState();
@@ -42,6 +55,30 @@ export default function Dashboard() {
     <main className="p-8 font-sans">
       <h1 className="text-2xl font-bold mb-4">VyomXR Mission Dashboard</h1>
       <p className="text-sm text-gray-500 mb-6">Last updated: {state.timestamp}</p>
+
+      {/* Anomaly Panel */}
+      <div className="mb-6">
+        {anomalies.length === 0 ? (
+          <div className="bg-green-100 border border-green-400 text-green-800 rounded p-4">
+            ? All systems nominal
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {anomalies.map((a, i) => (
+              <div
+                key={i}
+                className={
+                  a.severity === "high"
+                    ? "bg-red-100 border border-red-400 text-red-800 rounded p-4"
+                    : "bg-yellow-100 border border-yellow-400 text-yellow-800 rounded p-4"
+                }
+              >
+                <strong>[{a.subsystem.toUpperCase()}]</strong> {a.reason}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <section className="border rounded p-4">

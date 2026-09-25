@@ -7,7 +7,6 @@ from anomaly.detector import AnomalyDetector
 
 app = FastAPI(title="VyomXR Backend")
 
-# Allow the Next.js frontend (running on a different port) to call this API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -60,3 +59,35 @@ def get_anomalies():
 def get_telemetry_history(limit: int = 50):
     readings = logger.read_all()
     return {"readings": readings[-limit:]}
+
+
+@app.post("/test/trigger-anomaly/{subsystem}")
+def trigger_anomaly(subsystem: str):
+    """TEMPORARY test endpoint: manually trigger a fault on a subsystem."""
+    if subsystem == "thermal":
+        craft.thermal.set_anomaly(True)
+    elif subsystem == "power":
+        craft.power.set_anomaly(True)
+    elif subsystem == "attitude":
+        craft.attitude.set_anomaly(True)
+    elif subsystem == "communication":
+        craft.communication.set_anomaly(True)
+    else:
+        return {"error": f"Unknown subsystem: {subsystem}"}
+    return {"message": f"Anomaly triggered on {subsystem}"}
+
+
+@app.post("/test/clear-anomaly/{subsystem}")
+def clear_anomaly(subsystem: str):
+    """TEMPORARY test endpoint: clear a fault on a subsystem."""
+    if subsystem == "thermal":
+        craft.thermal.set_anomaly(False)
+    elif subsystem == "power":
+        craft.power.set_anomaly(False)
+    elif subsystem == "attitude":
+        craft.attitude.set_anomaly(False)
+    elif subsystem == "communication":
+        craft.communication.set_anomaly(False)
+    else:
+        return {"error": f"Unknown subsystem: {subsystem}"}
+    return {"message": f"Anomaly cleared on {subsystem}"}
