@@ -1,9 +1,11 @@
-from fastapi import FastAPI
+﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from simulator.spacecraft import Spacecraft
 from simulator.simulation_loop import SimulationLoop
 from telemetry.logger import TelemetryLogger
 from anomaly.detector import AnomalyDetector
+from mentor.ai_mentor import AIMentor
 
 app = FastAPI(title="VyomXR Backend")
 
@@ -17,6 +19,7 @@ app.add_middleware(
 craft = Spacecraft()
 logger = TelemetryLogger(log_path="telemetry/live.log")
 detector = AnomalyDetector()
+mentor = AIMentor()
 
 latest_anomalies = []
 
@@ -33,6 +36,10 @@ loop = SimulationLoop(
     anomaly_detector=detector,
     on_anomaly=handle_anomaly,
 )
+
+
+class MentorQuestion(BaseModel):
+    question: str
 
 
 @app.on_event("startup")
@@ -61,9 +68,16 @@ def get_telemetry_history(limit: int = 50):
     return {"readings": readings[-limit:]}
 
 
+@app.post("/mentor/ask")
+def ask_mentor(payload: MentorQuestion):
+    """Ask the AI Mentor a question, automatically grounded in live spacecraft data."""
+    state = loop.get_latest_state()
+    answer = mentor.ask(payload.question, state, latest_anomalies)
+    return {"answer": answer}
+
+
 @app.post("/test/trigger-anomaly/{subsystem}")
 def trigger_anomaly(subsystem: str):
-    """TEMPORARY test endpoint: manually trigger a fault on a subsystem."""
     if subsystem == "thermal":
         craft.thermal.set_anomaly(True)
     elif subsystem == "power":
@@ -79,7 +93,6 @@ def trigger_anomaly(subsystem: str):
 
 @app.post("/test/clear-anomaly/{subsystem}")
 def clear_anomaly(subsystem: str):
-    """TEMPORARY test endpoint: clear a fault on a subsystem."""
     if subsystem == "thermal":
         craft.thermal.set_anomaly(False)
     elif subsystem == "power":
