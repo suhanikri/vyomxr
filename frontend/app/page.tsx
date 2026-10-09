@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 
@@ -24,9 +24,17 @@ type Anomaly = {
   severity: string;
 };
 
+type ChatMessage = {
+  question: string;
+  answer: string;
+};
+
 export default function Dashboard() {
   const [state, setState] = useState<SpacecraftState | null>(null);
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
+  const [question, setQuestion] = useState("");
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [asking, setAsking] = useState(false);
 
   useEffect(() => {
     const fetchState = () => {
@@ -47,6 +55,27 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleAsk = () => {
+    if (!question.trim()) return;
+    setAsking(true);
+
+    fetch("http://127.0.0.1:8000/mentor/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setChatHistory((prev) => [...prev, { question, answer: data.answer }]);
+        setQuestion("");
+        setAsking(false);
+      })
+      .catch((err) => {
+        console.error("Failed to ask mentor:", err);
+        setAsking(false);
+      });
+  };
+
   if (!state) {
     return <main className="p-8">Loading spacecraft data...</main>;
   }
@@ -56,11 +85,10 @@ export default function Dashboard() {
       <h1 className="text-2xl font-bold mb-4">VyomXR Mission Dashboard</h1>
       <p className="text-sm text-gray-500 mb-6">Last updated: {state.timestamp}</p>
 
-      {/* Anomaly Panel */}
       <div className="mb-6">
         {anomalies.length === 0 ? (
           <div className="bg-green-100 border border-green-400 text-green-800 rounded p-4">
-            ? All systems nominal
+            All systems nominal
           </div>
         ) : (
           <div className="space-y-2">
@@ -80,7 +108,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 mb-6">
         <section className="border rounded p-4">
           <h2 className="font-semibold mb-2">Power</h2>
           <p>Voltage: {state.battery_voltage} V</p>
@@ -108,6 +136,37 @@ export default function Dashboard() {
           <p>Link status: {state.link_status}</p>
         </section>
       </div>
+
+      <section className="border rounded p-4">
+        <h2 className="font-semibold mb-3">AI Mentor</h2>
+
+        <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
+          {chatHistory.map((msg, i) => (
+            <div key={i}>
+              <p className="font-medium">You: {msg.question}</p>
+              <p className="text-gray-700">Mentor: {msg.answer}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAsk()}
+            placeholder="Ask the AI Mentor a question..."
+            className="border rounded px-3 py-2 flex-1"
+          />
+          <button
+            onClick={handleAsk}
+            disabled={asking}
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            {asking ? "Asking..." : "Ask"}
+          </button>
+        </div>
+      </section>
     </main>
   );
 }
