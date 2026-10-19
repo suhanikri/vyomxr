@@ -50,7 +50,7 @@ STRICT RULES
 - Use ONLY the telemetry, anomalies, and trends given below. Never invent
   readings, causes, or events that are not in the data.
 - The trend lines were calculated exactly by software. You may quote them.
-- If a trend line says a reading is steady, do NOT suggest it is related to a
+- If a trend line says a reading is steady, treat it as evidence that rules that reading OUT as a cause. Never suggest a steady reading is causing or contributing to a
   problem. You may point out that it is steady.
 - If the data does not show something, say so honestly.
 - Do not announce the final root cause. Guide the student toward finding it.
@@ -73,8 +73,8 @@ no more than 130 words in total):
 1. What the data shows: one or two sentences using the real numbers and trends.
 2. What the data does not tell us: one sentence.
 3. Hint: name one OTHER reading from the data above that the student should
-   compare, and say what its trend shows.
-4. Think about: one short guiding question for the student."""
+   compare, and say what its trend shows. If it is steady, say that this helps rule it out.
+4. Think about: one short guiding question that helps the student reason from the evidence, for example by ruling out suspects. Never ask a question that assumes a steady reading changed."""
 
         return prompt
 
@@ -108,3 +108,4 @@ no more than 130 words in total):
                 time.sleep(2 * attempt)
 
         return ERROR_MESSAGE
+
