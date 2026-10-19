@@ -1,7 +1,7 @@
 ﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from simulator.spacecraft import Spacecraft
+from simulator.spacecraft import Spacecraft, AVAILABLE_ACTIONS
 from simulator.simulation_loop import SimulationLoop
 from telemetry.logger import TelemetryLogger
 from anomaly.detector import AnomalyDetector
@@ -106,3 +106,31 @@ def clear_anomaly(subsystem: str):
         return {"error": f"Unknown subsystem: {subsystem}"}
     return {"message": f"Anomaly cleared on {subsystem}"}
 
+
+
+class ActionRequest(BaseModel):
+    action: str
+
+
+@app.get("/spacecraft/actions")
+def get_available_actions():
+    """List the recovery actions a student can choose from."""
+    return {
+        "actions": [
+            {"id": action, "label": action.replace("_", " ").capitalize()}
+            for action in AVAILABLE_ACTIONS
+        ]
+    }
+
+
+@app.post("/spacecraft/action")
+def take_action(payload: ActionRequest):
+    """Run a student's recovery action through the safety gate and the simulator.
+    Returns the decision record."""
+    return craft.execute_action(payload.action)
+
+
+@app.get("/spacecraft/decisions")
+def get_decisions():
+    """Return every decision recorded so far, oldest first."""
+    return {"decisions": craft.get_decisions()}
