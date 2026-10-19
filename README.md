@@ -13,7 +13,7 @@ VyomXR is an **educational simulation**, not a professional spacecraft-control s
 | 2 | Telemetry logging and visualization | Done |
 | 3 | Anomaly detection (threshold + rate-of-change) | Done |
 | 4 | Mission dashboard (FastAPI + Next.js) | Done |
-| 5 | AI Mentor (Gemini, grounded in live telemetry) | In progress |
+| 5 | AI Mentor (Gemini, grounded in live telemetry, trends, hints) | Done |
 | 6+ | RAG, agents, adaptive learning, XR, research study | Planned |
 
 ## Architecture
@@ -157,3 +157,4 @@ No experimental results exist yet. This project does not claim to invent AI agen
 ## Disclaimer
 
 VyomXR is an educational simulation only. It must never be used to control a real spacecraft.
+
