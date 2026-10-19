@@ -72,7 +72,8 @@ def get_telemetry_history(limit: int = 50):
 def ask_mentor(payload: MentorQuestion):
     """Ask the AI Mentor a question, automatically grounded in live spacecraft data."""
     state = loop.get_latest_state()
-    answer = mentor.ask(payload.question, state, latest_anomalies)
+    recent = loop.get_recent_states()
+    answer = mentor.ask(payload.question, state, latest_anomalies, recent)
     return {"answer": answer}
 
 
@@ -104,3 +105,4 @@ def clear_anomaly(subsystem: str):
     else:
         return {"error": f"Unknown subsystem: {subsystem}"}
     return {"message": f"Anomaly cleared on {subsystem}"}
+

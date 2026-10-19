@@ -3,6 +3,8 @@ import time
 from dotenv import load_dotenv
 from google import genai
 
+from mentor.trends import summarize_trends
+
 load_dotenv()
 
 BUSY_MESSAGE = (
@@ -25,14 +27,19 @@ class AIMentor:
         self.model = "gemini-3.8-flash"
         self.max_attempts = max_attempts
 
-    def _build_prompt(self, question, state, anomalies):
-        """Construct a prompt that grounds Gemini in the real spacecraft data
-        and makes it teach with hints and guiding questions."""
+    def _build_prompt(self, question, state, anomalies, recent_states=None):
+        """Construct a prompt grounded in the current state, active anomalies,
+        and the recent trends. Makes the Mentor teach with hints."""
 
         anomaly_text = "None currently detected."
         if anomalies:
             lines = [f"- [{a['subsystem']}/{a['severity']}] {a['reason']}" for a in anomalies]
             anomaly_text = "\n".join(lines)
+
+        if recent_states:
+            trend_text = summarize_trends(recent_states)
+        else:
+            trend_text = "No history available."
 
         prompt = f"""You are an AI Mentor inside VyomXR, an educational spacecraft
 simulation platform for engineering students. You help the student learn to
@@ -40,11 +47,15 @@ investigate problems. The student makes all decisions. You do NOT control the
 spacecraft and you must NOT tell the student which action to take.
 
 STRICT RULES
-- Use ONLY the telemetry and anomalies given below. Never invent readings,
-  causes, or events that are not in the data.
+- Use ONLY the telemetry, anomalies, and trends given below. Never invent
+  readings, causes, or events that are not in the data.
+- The trend lines were calculated exactly by software. You may quote them.
+- If a trend line says a reading is steady, do NOT suggest it is related to a
+  problem. You may point out that it is steady.
 - If the data does not show something, say so honestly.
 - Do not announce the final root cause. Guide the student toward finding it.
-- If there are no anomalies, say the spacecraft looks nominal. Do not invent a problem.
+- If there are no anomalies and the trends are steady, say the spacecraft
+  looks nominal. Do not invent a problem.
 
 Current spacecraft telemetry:
 {state}
@@ -52,26 +63,29 @@ Current spacecraft telemetry:
 Current detected anomalies:
 {anomaly_text}
 
+Recent trends:
+{trend_text}
+
 The student asks: "{question}"
 
 ANSWER FORMAT (plain text only, no markdown, no asterisks, no bullet symbols,
-no more than 120 words in total):
-1. What the data shows: one or two sentences using the real numbers above.
+no more than 130 words in total):
+1. What the data shows: one or two sentences using the real numbers and trends.
 2. What the data does not tell us: one sentence.
-3. Hint: name one OTHER telemetry reading from the data above that the student
-   should compare, and say why it could matter.
+3. Hint: name one OTHER reading from the data above that the student should
+   compare, and say what its trend shows.
 4. Think about: one short guiding question for the student."""
 
         return prompt
 
-    def ask(self, question, state, anomalies=None):
+    def ask(self, question, state, anomalies=None, recent_states=None):
         """Ask the AI Mentor a question, grounded in the current spacecraft state.
         Retries on temporary Gemini errors. Never raises: returns a friendly
         message if every attempt fails."""
         if anomalies is None:
             anomalies = []
 
-        prompt = self._build_prompt(question, state, anomalies)
+        prompt = self._build_prompt(question, state, anomalies, recent_states)
 
         for attempt in range(1, self.max_attempts + 1):
             try:
